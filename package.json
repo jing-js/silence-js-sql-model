@@ -1,0 +1,19 @@
+{
+  "name": "0.0.1",
+  "version": "0.0.1",
+  "description": "sql model for silence-js",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jing-js/silence-js-sql-model.git"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bugs": {
+    "url": "https://github.com/jing-js/silence-js-sql-model/issues"
+  },
+  "homepage": "https://github.com/jing-js/silence-js-sql-model#readme",
+  "author": "Yuhang Ge <abeyuhang@gmail.com>",
+  "license": "ISC"
+}
