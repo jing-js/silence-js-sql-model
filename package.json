@@ -1,5 +1,5 @@
 {
-  "name": "0.0.1",
+  "name": "silence-js-sql-model",
   "version": "0.0.1",
   "description": "sql model for silence-js",
   "main": "index.js",
