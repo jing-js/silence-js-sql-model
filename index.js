@@ -1,6 +1,5 @@
 'use strict';
 
-const util = require('silence-js-util');
 const BaseModel = require('silence-js-base-model');
 
 class SQLModel extends BaseModel {
@@ -85,7 +84,7 @@ class SQLModel extends BaseModel {
   static all(conditions, options) {
     conditions = conditions || {};
     options = options || {};
-    let fields = util.isString(options.fields) ? options.fields : (Array.isArray(options.fields) ? options.fields.join(',') : '*');
+    let fields = typeof options.fields === 'string' ? options.fields : (Array.isArray(options.fields) ? options.fields.join(',') : '*');
     let conditionFields = [], conditionParams = [];
     for(let k in conditions) {
       conditionFields.push(k + '=?');
@@ -98,7 +97,7 @@ class SQLModel extends BaseModel {
     return this.db.query(queryString, conditionParams);
   }
   static one(primaryKeyOrConditions = {}, options) {
-    let conditions = util.isObject(primaryKeyOrConditions)
+    let conditions = typeof primaryKeyOrConditions === 'object'
       ? primaryKeyOrConditions : {
       [this.primaryKey]: primaryKeyOrConditions
     };

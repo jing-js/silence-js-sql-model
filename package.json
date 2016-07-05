@@ -1,6 +1,6 @@
 {
   "name": "silence-js-sql-model",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "sql model for silence-js",
   "main": "index.js",
   "repository": {
@@ -15,5 +15,8 @@
   },
   "homepage": "https://github.com/jing-js/silence-js-sql-model#readme",
   "author": "Yuhang Ge <abeyuhang@gmail.com>",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "silence-js-base-model": "^1.0.0"
+  }
 }
