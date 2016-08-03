@@ -81,6 +81,22 @@ class SQLModel extends BaseModel {
       return result.affectedRows;
     });
   }
+  static update(conditions, fields) {
+    let queryFields = [], queryParams = [];
+    for(let k in fields) {
+      queryFields.push(k + '=?');
+      queryParams.push(fields[k]);
+    }
+    let conditionFields = [];
+    for(let k in conditions) {
+      conditionFields.push(k + '=?');
+      queryParams.push(conditions[k]);
+    }
+    let queryString = `UPDATE ${this.table} SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
+    return this.db.exec(queryString, queryParams).then(result => {
+      return result.affectedRows > 0;
+    });
+  }
   static all(conditions, options) {
     conditions = conditions || {};
     options = options || {};
@@ -108,26 +124,48 @@ class SQLModel extends BaseModel {
     });
   }
   static count(conditions, options) {
-
+    conditions = conditions || {};
+    options = options || {};
+    let conditionFields = [], conditionParams = [];
+    for(let k in conditions) {
+      conditionFields.push(k + '=?');
+      conditionParams.push(conditions[k]);
+    }
+    let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
+    let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
+    let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
+    let queryString = `SELECT COUNT(*) from ${this.table} ${conditionString} ${orderString} ${limitString};`;
+    return this.db.query(queryString, conditionParams);
   }
-  _saveOrUpdate(save, validate) {
+  _saveOrUpdate(updateConditions, validate) {
     if (validate && !this.validate()) {
       return Promise.resolve(false);
     }
     let fields = this.constructor.fields;
+    let pk = this.constructor.primaryKey;
     let queryFields = [], queryParams = [];
     for(let i = 0; i < fields.length; i++) {
       let f = fields[i].name;
       if (this[f] !== undefined) {
-        queryFields.push(`\`${f}\`${save ? '' : '=?'}`);
+        queryFields.push(`\`${f}\`${updateConditions ? '=?' : ''}`);
         queryParams.push(this[f]);
       }
     }
-    let queryString = `${save ? 'INSERT INTO' : 'UPDATE'} ${this.constructor.table} ${save ? `(${queryFields.join(',')}) VALUES (${queryFields.map(()=>'?').join(',')})` : `SET  ${queryFields.join(', ')}`}`;
+    let queryString;
+    if (updateConditions) {
+      let conditionFields = [];
+      for(let k in updateConditions) {
+        conditionFields.push(k + '=?');
+        queryParams.push(updateConditions[k]);
+      }
+      queryString = `UPDATE ${this.constructor.table} SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
+    } else {
+      queryString = `INSERT INTO ${this.constructor.table} (${queryFields.join(',')}) VALUES (${queryFields.map(()=>'?').join(',')})`;
+    }
     return this.constructor.db.exec(queryString, queryParams)
   }
   save(validate = true) {
-    return this._saveOrUpdate(true, validate).then(result => {
+    return this._saveOrUpdate(null, validate).then(result => {
       if (result.affectedRows <= 0) {
         return false;
       }
@@ -137,7 +175,10 @@ class SQLModel extends BaseModel {
     });
   }
   update(validate = true) {
-    return this._saveOrUpdate(false, validate).then(result => {
+    let pk = this.constructor.primaryKey;
+    return this._saveOrUpdate({
+      [pk] : this[pk]
+    }, validate).then(result => {
       return result.affectedRows > 0;
     });
   }
