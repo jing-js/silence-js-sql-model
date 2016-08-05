@@ -60,7 +60,7 @@ class SQLModel extends BaseModel {
           return this.info.primaryKey;
         }
       }
-      this.info.primaryKey = 'id';
+      this.info.primaryKey = '';
     }
     return this.info.primaryKey;
   }
@@ -69,6 +69,11 @@ class SQLModel extends BaseModel {
   }
   static createTable() {
     return this.db.exec(this.db.genCreateTableSQL(this));
+  }
+  static removeByPK(pk) {
+    return this.remove({
+      [this.primaryKey] : pk
+    });
   }
   static remove(conditions) {
     let queryFields = [], queryParams = [];
@@ -131,11 +136,14 @@ class SQLModel extends BaseModel {
       conditionFields.push(k + '=?');
       conditionParams.push(conditions[k]);
     }
+    let countField = `COUNT(${options.count ? options.count : (this.primaryKey ? this.primaryKey : '*')})`;
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
     let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
     let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
-    let queryString = `SELECT COUNT(*) from ${this.table} ${conditionString} ${orderString} ${limitString};`;
-    return this.db.query(queryString, conditionParams);
+    let queryString = `SELECT ${countField} as N from ${this.table} ${conditionString} ${orderString} ${limitString};`;
+    return this.db.query(queryString, conditionParams).then(result => {
+      return result[0].N;
+    });
   }
   _saveOrUpdate(updateConditions, validate) {
     if (validate && !this.validate()) {
