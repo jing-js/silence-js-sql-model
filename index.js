@@ -128,6 +128,13 @@ class SQLModel extends BaseModel {
       return rows.length > 0 ? rows[0] : null;
     });
   }
+  static touch(primaryKeyId) {
+    return this.one({
+      [this.primaryKey]: primaryKeyId
+    }, {
+      fields: [this.primaryKey]
+    });
+  }
   static count(conditions, options) {
     conditions = conditions || {};
     options = options || {};
