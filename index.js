@@ -153,7 +153,7 @@ class SQLModel extends BaseModel {
     });
   }
   _saveOrUpdate(updateConditions, validate) {
-    if (validate && !this.validate()) {
+    if (validate && !this.validate(updateConditions !== null)) {
       return Promise.resolve(false);
     }
     let fields = this.constructor.fields;
