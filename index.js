@@ -34,9 +34,18 @@ class SQLModel extends BaseModel {
     return this.info.fields;
   }
   static set fields(fields) {
-    fields.forEach(field => {
-      this.db.initField(field);
-    });
+    for(let i = 0; i < fields.length; i++) {
+      let fd = fields[i];
+      if (!fd.name) {
+        throw new Error(`Field must have 'name'`);
+      } else if (!fd.type) {
+        throw new Error('Field must have \'type\'');
+      }
+      let result = this.db.initField(fd);
+      if (result === -1) {
+        throw new Error(`Unknown field type ${fd.dbType || fd.type}`);
+      }
+    }
     this.info.fields = fields;
   }
   static get table() {
@@ -65,7 +74,7 @@ class SQLModel extends BaseModel {
     return this.info.primaryKey;
   }
   static dropTable() {
-    return this.db.exec(`DROP TABLE ${this.table}`);
+    return this.db.exec(`DROP TABLE IF EXISTS \`${this.table}\``);
   }
   static createTable() {
     return this.db.exec(this.db.genCreateTableSQL(this));
@@ -181,7 +190,7 @@ class SQLModel extends BaseModel {
   }
   save(validate = true) {
     return this._saveOrUpdate(null, validate).then(result => {
-      if (result.affectedRows <= 0) {
+      if (!result || result.affectedRows <= 0) {
         return false;
       }
       let pk = this.constructor.primaryKey;
