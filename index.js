@@ -87,7 +87,7 @@ class SQLModel extends BaseModel {
   static remove(conditions) {
     let queryFields = [], queryParams = [];
     for(let k in conditions) {
-      queryFields.push(k + '=?');
+      queryFields.push(`\`${k}\`` + '=?');
       queryParams.push(conditions[k]);
     }
     let queryString = `DELETE from ${this.table} WHERE ${queryFields.join(' AND ')}`;
@@ -98,15 +98,15 @@ class SQLModel extends BaseModel {
   static update(conditions, fields) {
     let queryFields = [], queryParams = [];
     for(let k in fields) {
-      queryFields.push(k + '=?');
+      queryFields.push(`\`${k}\`` + '=?');
       queryParams.push(fields[k]);
     }
     let conditionFields = [];
     for(let k in conditions) {
-      conditionFields.push(k + '=?');
+      conditionFields.push(`\`${k}\`` + '=?');
       queryParams.push(conditions[k]);
     }
-    let queryString = `UPDATE ${this.table} SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
+    let queryString = `UPDATE \`${this.table}\` SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
     return this.db.exec(queryString, queryParams).then(result => {
       return result.affectedRows > 0;
     });
@@ -117,7 +117,7 @@ class SQLModel extends BaseModel {
     let fields = typeof options.fields === 'string' ? options.fields : (Array.isArray(options.fields) ? options.fields.join(',') : '*');
     let conditionFields = [], conditionParams = [];
     for(let k in conditions) {
-      conditionFields.push(k + '=?');
+      conditionFields.push(`\`${k}\`` + '=?');
       conditionParams.push(conditions[k]);
     }
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
@@ -149,7 +149,7 @@ class SQLModel extends BaseModel {
     options = options || {};
     let conditionFields = [], conditionParams = [];
     for(let k in conditions) {
-      conditionFields.push(k + '=?');
+      conditionFields.push(`\`${k}\`` + '=?');
       conditionParams.push(conditions[k]);
     }
     let countField = `COUNT(${options.count ? options.count : (this.primaryKey ? this.primaryKey : '*')})`;
@@ -179,7 +179,7 @@ class SQLModel extends BaseModel {
     if (updateConditions) {
       let conditionFields = [];
       for(let k in updateConditions) {
-        conditionFields.push(k + '=?');
+        conditionFields.push(`\`${k}\`` + '=?');
         queryParams.push(updateConditions[k]);
       }
       queryString = `UPDATE ${this.constructor.table} SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
