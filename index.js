@@ -95,14 +95,14 @@ class SQLModel extends BaseModel {
   static update(conditions, fields) {
     let queryFields = [], queryParams = [];
     for(let k in fields) {
+      if (k === this.primaryKey) {
+        continue;
+      }
       queryFields.push(`\`${k}\`` + '=?');
       queryParams.push(fields[k]);
     }
     let conditionFields = [];
     for(let k in conditions) {
-      if (k === this.primaryKey) {
-        continue;
-      }
       conditionFields.push(`\`${k}\`` + '=?');
       queryParams.push(conditions[k]);
     }
@@ -169,6 +169,9 @@ class SQLModel extends BaseModel {
     let queryFields = [], queryParams = [];
     for(let i = 0; i < fields.length; i++) {
       let f = fields[i].name;
+      if (f === this.constructor.primaryKey && fields[i].autoIncrement) {
+        continue;
+      }
       if (this[f] !== undefined) {
         queryFields.push(`\`${f}\`${updateConditions ? '=?' : ''}`);
         queryParams.push(this[f]);
@@ -178,9 +181,6 @@ class SQLModel extends BaseModel {
     if (updateConditions) {
       let conditionFields = [];
       for(let k in updateConditions) {
-        if (k === this.constructor.primaryKey) {
-          continue;
-        }
         conditionFields.push(`\`${k}\`` + '=?');
         queryParams.push(updateConditions[k]);
       }
