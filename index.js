@@ -3,9 +3,6 @@
 const BaseModel = require('silence-js-base-model');
 
 class SQLModel extends BaseModel {
-  static get isDatabaseModel() {
-    return true;
-  }
   static get info() {
     if (!this.__info) {
       this.__info = {
@@ -103,6 +100,9 @@ class SQLModel extends BaseModel {
     }
     let conditionFields = [];
     for(let k in conditions) {
+      if (k === this.primaryKey) {
+        continue;
+      }
       conditionFields.push(`\`${k}\`` + '=?');
       queryParams.push(conditions[k]);
     }
@@ -166,7 +166,6 @@ class SQLModel extends BaseModel {
       return Promise.resolve(false);
     }
     let fields = this.constructor.fields;
-    let pk = this.constructor.primaryKey;
     let queryFields = [], queryParams = [];
     for(let i = 0; i < fields.length; i++) {
       let f = fields[i].name;
@@ -179,6 +178,9 @@ class SQLModel extends BaseModel {
     if (updateConditions) {
       let conditionFields = [];
       for(let k in updateConditions) {
+        if (k === this.constructor.primaryKey) {
+          continue;
+        }
         conditionFields.push(`\`${k}\`` + '=?');
         queryParams.push(updateConditions[k]);
       }
