@@ -94,7 +94,7 @@ class SQLModel extends BaseModel {
     return this.db.exec(this.db.genCreateTableSQL(this));
   }
   static removeByPK(pk) {
-    return this.db.exec(`DELETE from ${this.table} WHERE \`${this.primaryKey}\`=?`, pk).then(result => {
+    return this.db.exec(`DELETE from \`${this.table}\` WHERE \`${this.primaryKey}\`=?`, pk).then(result => {
       return result.affectedRows;
     });
   }
@@ -104,7 +104,7 @@ class SQLModel extends BaseModel {
       queryFields.push(`\`${k}\`` + '=?');
       queryParams.push(conditions[k]);
     }
-    let queryString = `DELETE from ${this.table} WHERE ${queryFields.join(' AND ')}`;
+    let queryString = `DELETE from \`${this.table}\` WHERE ${queryFields.join(' AND ')}`;
     return this.db.exec(queryString, queryParams).then(result => {
       return result.affectedRows;
     });
@@ -174,7 +174,7 @@ class SQLModel extends BaseModel {
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
     let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
     let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
-    let queryString = `SELECT ${fields} from ${this.table} ${conditionString} ${orderString} ${limitString};`;
+    let queryString = `SELECT ${fields} from \`${this.table}\` ${conditionString} ${orderString} ${limitString};`;
     return this.db.query(queryString, conditionParams).then(rows => {
       return rows.map(row => {
         let m = new this(false);
@@ -213,7 +213,7 @@ class SQLModel extends BaseModel {
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
     let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
     let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
-    let queryString = `SELECT ${countField} as N from ${this.table} ${conditionString} ${orderString} ${limitString};`;
+    let queryString = `SELECT ${countField} as N from \`${this.table}\` ${conditionString} ${orderString} ${limitString};`;
     return this.db.query(queryString, conditionParams).then(result => {
       return result[0].N;
     });
@@ -241,9 +241,9 @@ class SQLModel extends BaseModel {
         queryParams.push(this[af.name]);
       }
       queryParams.push(this[updatePK]);
-      queryString = `UPDATE ${this.constructor.table} SET ${queryFields.join(', ')} WHERE \`${updatePK}\`=?`;
+      queryString = `UPDATE \`${this.constructor.table}\` SET ${queryFields.join(', ')} WHERE \`${updatePK}\`=?`;
     } else {
-      queryString = `INSERT INTO ${this.constructor.table} (${queryFields.join(', ')}) VALUES (${queryFields.map(()=>'?').join(', ')})`;
+      queryString = `INSERT INTO \`${this.constructor.table}\` (${queryFields.join(', ')}) VALUES (${queryFields.map(()=>'?').join(', ')})`;
     }
     return this.constructor.db.exec(queryString, queryParams)
   }
