@@ -2,6 +2,7 @@
 
 const BaseModel = require('silence-js-base-model');
 const ModelField = BaseModel.ModelField;
+const EMPTY = {};
 
 class SQLModel extends BaseModel {
   static get info() {
@@ -93,17 +94,9 @@ class SQLModel extends BaseModel {
   static createTable() {
     return this.db.exec(this.db.genCreateTableSQL(this));
   }
-  static removeByPK(pk) {
-    return this.db.exec(`DELETE from \`${this.table}\` WHERE \`${this.primaryKey}\`=?`, pk).then(result => {
-      return result.affectedRows;
-    });
-  }
   static remove(conditions) {
     let queryFields = [], queryParams = [];
-    for(let k in conditions) {
-      queryFields.push(`\`${k}\`` + '=?');
-      queryParams.push(conditions[k]);
-    }
+    this.__dealConditions(queryFields, queryParams, conditions);
     let queryString = `DELETE from \`${this.table}\` WHERE ${queryFields.join(' AND ')}`;
     return this.db.exec(queryString, queryParams).then(result => {
       return result.affectedRows;
@@ -128,49 +121,55 @@ class SQLModel extends BaseModel {
       queryFields.push(`\`${k}\`` + '=?');
       queryParams.push(type === 'boolean' ? (v ? 1 : 0) : v);
     }
+
     let af = this.info.autoUpdateTimestampField;
+    let mt = -1;
     if (af && !fields.hasOwnProperty(af.name)) {
+      mt = af.defaultValue;
       queryFields.push(`\`${af.name}\`=?`);
-      queryParams.push(af.defaultValue);
+      queryParams.push(mt);
     }
 
-    let queryString;
-
-    if (typeof conditions === 'object') {
-      let conditionFields = [];
+    let conditionFields = [];
+    this.__dealConditions(conditionFields, queryParams, conditions);
+    let queryString = `UPDATE \`${this.table}\` SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
+    return this.db.exec(queryString, queryParams).then(result => {
+      return result.affectedRows > 0 ? (mt > 0 ? {
+        modifyTime: mt
+      } : true) : false;
+    });
+  }
+  static __dealConditions(conditionFields, conditionParams, conditions) {
+    if (Array.isArray(conditions)) {
+      conditionFields.push(`\`${this.primaryKey}\` in (${conditions.map(item => '?').join(',')})`);
+      conditionParams.push(...conditions);
+    } else if (typeof conditions === 'object') {
       for(let k in conditions) {
         let type = this.info.fieldsTypeMap[k];
         if (!type) {
           continue;
         }
         let v = conditions[k];
-        conditionFields.push(`\`${k}\`=?`);
-        queryParams.push(type === 'boolean' ? (v ? 1 : 0) : v);
+        if (type === 'boolean') {
+          v = v ? 1 : 0;
+        }
+        if (Array.isArray(v)) {
+          conditionFields.push(`\`${k}\` in (${v.map(item => '?').join(',')})`);
+          conditionParams.push(...v);
+        } else {
+          conditionFields.push(`\`${k}\`=?`);
+          conditionParams.push(v);
+        }
       }
-      queryString = `UPDATE \`${this.table}\` SET  ${queryFields.join(', ')} WHERE ${conditionFields.join(' AND ')}`;
     } else {
-      queryString = `UPDATE \`${this.table}\` SET  ${queryFields.join(', ')} WHERE ${this.primaryKey}=?`;
-      queryParams.push(conditions);
+      conditionFields.push(`\`${this.primaryKey}\`=?`);
+      conditionParams.push(conditions);
     }
-
-    return this.db.exec(queryString, queryParams).then(result => {
-      return result.affectedRows > 0;
-    });
   }
-  static all(conditions, options) {
-    conditions = conditions || {};
-    options = options || {};
+  static all(conditions = EMPTY, options = EMPTY) {
     let fields = typeof options.fields === 'string' ? options.fields : (Array.isArray(options.fields) ? options.fields.join(',') : '*');
     let conditionFields = [], conditionParams = [];
-    for(let k in conditions) {
-      let type = this.info.fieldsTypeMap[k];
-      if (!type) {
-        continue;
-      }
-      let v = conditions[k];
-      conditionFields.push(`\`${k}\`=?`);
-      conditionParams.push(type === 'boolean' ? (v ? 1 : 0) : v);
-    }
+    this.__dealConditions(conditionFields, conditionParams, conditions);
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
     let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
     let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
@@ -183,14 +182,14 @@ class SQLModel extends BaseModel {
       });
     });
   }
-  static one(primaryKeyOrConditions = {}, options) {
-    let conditions = typeof primaryKeyOrConditions === 'object'
+  static one(primaryKeyOrConditions = EMPTY, options = EMPTY) {
+    let conditions = typeof primaryKeyOrConditions === 'object' && !Array.isArray(primaryKeyOrConditions)
       ? primaryKeyOrConditions : {
       [this.primaryKey]: primaryKeyOrConditions
     };
-    return this.all(conditions,  Object.assign(options || {}, {
+    return this.all(conditions,  Object.assign({
       limit: 1
-    })).then(rows => {
+    }, options)).then(rows => {
       return rows.length > 0 ? rows[0] : null;
     });
   }
@@ -201,21 +200,16 @@ class SQLModel extends BaseModel {
       fields: [this.primaryKey]
     });
   }
-  static count(conditions, options) {
-    conditions = conditions || {};
-    options = options || {};
+  static count(conditions = EMPTY, options = EMPTY) {
     let conditionFields = [], conditionParams = [];
-    for(let k in conditions) {
-      conditionFields.push(`\`${k}\`` + '=?');
-      conditionParams.push(conditions[k]);
-    }
-    let countField = `COUNT(${options.count ? options.count : (this.primaryKey ? this.primaryKey : '*')})`;
+    this.__dealConditions(conditionFields, conditionParams, conditions);
+    let countField = `COUNT(${options.count ? options.count : '*'})`;
     let conditionString = conditionFields.length > 0 ? `WHERE ${conditionFields.join(' AND ')}` : '';
     let limitString = options.limit ? ("LIMIT " + (options.offset ? options.offset + ', ' : '') + options.limit) : '';
     let orderString = options.orderBy ? "ORDER BY " + (_.isArray(options.orderBy) ? options.orderBy.join(',') : options.orderBy) : '';
     let queryString = `SELECT ${countField} as N from \`${this.table}\` ${conditionString} ${orderString} ${limitString};`;
     return this.db.query(queryString, conditionParams).then(result => {
-      return result[0].N;
+      return result && result[0] ? result[0].N : 0;
     });
   }
   _saveOrUpdate(updatePK, validate) {
