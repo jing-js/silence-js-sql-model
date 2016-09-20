@@ -1,6 +1,7 @@
 'use strict';
 
 const BaseSQLModel = require('./BaseSQLModel');
+const { BaseModel } = require('silence-js-base-model');
 
 const SQLModel = {
   __init(db, logger) {
@@ -9,6 +10,7 @@ const SQLModel = {
     }
     BaseSQLModel.__db = db;
     BaseSQLModel.__logger = logger;
+    BaseModel.__logger = logger;
   },
   create: require('./create'),
   isSQLModel(ModelClass) {

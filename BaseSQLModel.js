@@ -195,9 +195,3 @@ BaseSQLModel.__db = null;
 BaseSQLModel.__logger = null;
 
 module.exports = BaseSQLModel;
-
-
-
-
-
-
