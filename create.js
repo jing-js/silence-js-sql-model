@@ -18,6 +18,8 @@ function create(proto) {
     let field = new ModelField(proto.fields[i]);
     if (!field.name) {
       throw new Error(`Field must have 'name', please check fields of ${this.name}`);
+    } else if(['constructor'].indexOf(field.name) >= 0) {
+      throw new Error(`Field name can not be ${field.name}, it's reserved words`);
     } else if (!field.type) {
       throw new Error(`Field ${field.name} must have 'type', please check fields of ${this.name}`);
     } else {
