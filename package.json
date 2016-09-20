@@ -1,6 +1,6 @@
 {
   "name": "silence-js-sql-model",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "sql model for silence-js",
   "main": "index.js",
   "repository": {
