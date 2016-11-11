@@ -95,7 +95,7 @@ class BaseSQLModel extends BaseModel {
     let queryString = `SELECT ${fields} from \`${this.table}\` ${conditionString} ${orderString} ${limitString};`;
     return this.db.query(queryString, conditionParams).then(rows => {
       return rows.map(row => {
-        return new this(row, false);
+        return new this(row, true);
       });
     });
   }

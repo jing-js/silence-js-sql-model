@@ -45,12 +45,20 @@ function create(proto) {
 class ${name} extends BaseSQLModel {
   constructor(values, assignDefaultValue = true) {
   super();
-  const fields = this.constructor.fields;
   ${fields.map((field, idx) => {
-    return`
-  this.${field.name} = values && values.hasOwnProperty('${field.name}') 
-      ? values.${field.name} : (assignDefaultValue ? fields[${idx}].defaultValue : undefined);
-`;    
+    let _default = 'undefined';
+    if (typeof field._defaultValue === 'function') {
+      _default = `(direct ? undefined : this.constructor.fields[${idx}].defaultValue)`;
+    } else if (typeof field._defaultValue !== 'undefined') {
+      _default = `(direct ? undefined : ${JSON.stringify(field._defaultValue)})`;
+    }
+    let _value = `values.${field.name}`;
+    if (typeof field.convert === 'function') {
+      _value = `(direct ? values.${field.name} : this.constructor.fields[${idx}].convert(values.${field.name}))`;
+    } else if (typeof field.convert === 'string') {
+      _value = `(direct ? values.${field.name} : CONVERTERS.${field.convert}(values.${field.name}))`;
+    }
+    return`  this.${field.name} = values && values.hasOwnProperty('${field.name}') ? ${_value} : ${_default};`;
   }).join('\n')}
   }
 }
